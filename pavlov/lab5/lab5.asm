@@ -3,10 +3,10 @@ astack segment stack
 astack ends
 
 data segment
-	loading_msg db 'Loaded interruption into the memory', 10, 13, '$'
-	loaded db 'Interruption is in the memory', 10, 13, '$'
-	unloading_msg db 'Unloaded interruption from the memory', 10, 13, '$'
-	missing_msg db 'Interruption missing', 10, 13, '$'
+	loading_msg db 'Прерывание загружено в память', 10, 13, '$'
+	loaded db 'Прерывание уже в памяти', 10, 13, '$'
+	unloading_msg db 'Прерывание выгружено из памяти', 10, 13, '$'
+	missing_msg db 'Прерывания нет в памяти', 10, 13, '$'
 	lodd db 0
 	tounld db 0
 data ends
