@@ -1,301 +1,288 @@
-assume cs:code, ds:data, ss:Astack
-
 Astack segment stack
-	dw 32 dup(?)
+	dw 64 dup(?)
 Astack ends
 
-code segment
-
-inter_1Ch proc far
-	jmp init_counter
-
-	psp1 dw 0
-	psp2 dw 0
-	save_cs dw 0
-	save_ip dw 0
-	is_timer_set dw 0fedch
-	counter db 'Вызовов прерывания: 0000  $'
-
-init_counter:
-	push ax
-	push bx
-	push cx
-	push dx
-
-	mov ah, 3
-	xor bh, bh
-	int 10h
-	push dx
-	mov ah, 2
-	xor bh, bh
-	mov dx, 828h
-	int 10h
-
-	push si
-	push cx
-	push ds
-	mov ax, seg counter
-	mov ds, ax
-	mov si, offset counter
-	add si, 23
-
-	mov ah,[si]
-	inc ah
-	mov [si], ah
-	cmp ah, 3ah
-	jne print_timer
-	mov ah, 30h
-	mov [si], ah
-
-	mov bh, [si - 1]
-	inc bh
-	mov [si - 1], bh
-	cmp bh, 3ah
-	jne print_timer
-	mov bh, 30h
-	mov [si - 1], bh
-
-	mov ch, [si - 2]
-	inc ch
-	mov [si - 2], ch
-	cmp ch, 3ah
-	jne print_timer
-	mov ch, 30h
-	mov [si - 2], ch
-
-	mov dh, [si - 3]
-	inc dh
-	mov [si - 3], dh
-	cmp dh, 3ah
-	jne print_timer
-	mov dh, 30h
-	mov [si - 3],dh
-
-print_timer:
-    pop ds
-    pop cx
-	pop si
-
-	push es
-    push bp
-    mov ax, seg counter
-    mov es, ax
-    mov bp, offset counter
-    mov ax, 1300h
-    mov cx, 24
-    mov bh, 0
-    int 10h
-    pop bp
-	pop es
-	pop dx
-	mov ah, 2
-	xor bh, bh
-	int 10h
-
-	pop dx
-	pop cx
-	pop bx
-	pop ax
-	iret
-inter_1Ch endp
-
-print_string proc near
-	push ax
-	mov ah, 9h
-	int	21h
-	pop ax
-	retn
-print_string endp
-
-reserve proc
-reserve endp
-
-is_set proc near
-	push bx
-	push dx
-	push es
-
-	mov ah, 35h
-	mov al, 1ch
-	int 21h
-
-	mov dx, es:[bx + 11]
-	cmp dx, 0fedch
-	je is
-	xor al, al
-	jmp isnt
-
-	is:
-		mov al, 1
-	isnt:
-		pop es
-		pop dx
-		pop bx
-	retn
-is_set endp
-
-param proc near
-	push es
-
-	mov ax, psp1
-	mov es, ax
-	mov bx, 82h
-
-	mov al, es:[bx]
-	inc bx
-	cmp al, '/'
-	jne unknown_param
-
-	mov al, es:[bx]
-	inc bx
-	cmp al, 'u'
-	jne unknown_param
-
-	mov al, es:[bx]
-	inc bx
-	cmp al, 'n'
-	jne unknown_param
-
-	mov al, 1
-	unknown_param:
-		pop es
-		retn
-param endp
-
-load proc near
-	push ax
-	push bx
-	push dx
-	push es
-
-	mov ah, 35h
-	mov al, 1ch
-	int 21h
-	mov save_ip, bx
-	mov save_cs, es
-	
-	push ds
-    mov ax, seg inter_1Ch
-    mov ds, ax
-	mov dx, offset inter_1Ch
-    mov ah, 25h
-    mov al, 1ch
-    int 21h
-	pop ds
-
-	mov dx, offset ld_in_process
-	call print_string
-
-	pop es
-	pop dx
-	pop bx
-	pop ax
-	retn
-load endp
-
-unload proc near
-	push ax
-	push bx
-	push dx
-	push es
-
-	mov ah, 35h
-	mov al, 1ch
-	int 21h
-
-	cli
-	push ds
-    mov dx, es:[bx + 9]
-    mov ax, es:[bx + 7]
-    mov ds, ax
-    mov ah, 25h
-    mov al, 1ch
-    int 21h
-	pop ds
-	sti
-
-	mov dx, offset unloaded
-	call print_string
-
-	push es
-    mov cx, es:[bx + 3]
-    mov es, cx
-    mov ah, 49h
-    int 21h
-	pop es
-
-	mov cx, es:[bx + 5]
-	mov es, cx
-	int 21h
-
-	pop es
-	pop dx
-	pop bx
-	pop ax
-
-	retn
-unload endp
-
-main proc far
-	mov bx, 2ch
-	mov ax, [bx]
-	mov psp2, ax
-	mov psp1, ds
-	sub ax, ax
-	xor bx, bx
-
-	mov ax, data
-	mov ds, ax
-
-	call param
-	cmp al, 1
-	je tounld
-
-	call is_set
-	cmp al, 1
-	jne nload
-
-	mov dx, offset loaded
-	call print_string
-	jmp exit
-
-	mov ah,4ch
-	int 21h
-
-	nload:
-		call load
-
-		mov dx, offset reserve
-		mov cl, 4
-		shr dx, cl
-		add dx, 1bh
-
-		mov ax, 3100h
-		int 21h
-
-	tounld:
-		call is_set
-		cmp al, 0
-		je is_missing
-		call unload
-		jmp exit
-
-	is_missing:
-		mov dx, offset missing
-		call print_string
-
-	exit:
-		mov ah, 4ch
-		int 21h
-main endp
-
-code ends
-
 data segment
-	missing db "Не найдено прерывание в памяти", 13, 10, '$'
-	unloaded db "Прерывание выгружено из памяти", 13, 10, '$'
-	loaded db "Прерывание уже загружено в память", 13, 10, '$'
-	ld_in_process db "Загрузка прерывания в память", 13, 10, '$'
+	loaded db 0
+	tounld db 0
+	msg_loading db "Прерывание загружено в память",10,13,"$"
+	msg_loaded db "Прерывание уже загружено",10,13,"$"
+	msg_unloading db "Прерывание выгружено из памяти",10,13,"$"
+	msg_unloaded db "Нет загруженного прерывания",10,13,"$"
 data ends
 
+code segment
+	assume cs:code, ds:data, ss:Astack
+
+	inter proc far
+		jmp init
+		routdata:
+		counter db "0000 вызовов"
+		id dw 2228h
+		save_cs dw 0
+		save_ip dw 0
+		save_psp dw 0
+		save_ax dw 0
+		save_ss dw 0
+		save_sp dw 0
+		substack dw 64 dup(?)
+
+		init:
+			mov save_ax, ax
+			mov save_sp, sp
+			mov save_ss, ss
+			mov ax, seg substack
+			mov ss, ax
+			mov ax, offset substack
+			add ax, 128
+			mov sp, ax	
+
+			push ax
+			push bx
+			push cx
+			push dx
+			push si
+			push es
+			push ds
+			mov ax, seg counter
+			mov ds, ax
+
+		mov ah, 03h
+		mov bh, 0h
+		int 10h
+		push dx
+
+		mov ah, 02h
+		mov bh, 0h
+		mov dx, 0141h 
+		int 10h
+
+		mov si, offset counter
+		add	si, 3
+		mov cx, 4
+
+		increase:
+			mov ah, [si]
+			cmp ah, '9'
+				jl increaseD
+			sub ah, 9
+			mov [si], ah
+			dec si
+			loop increase		
+		increaseD:
+			cmp cx, 0
+				je reset
+			inc ah
+			mov [si], ah
+		reset:
+
+		push es
+		push bp
+		mov ax, seg counter
+		mov es, ax
+		mov bp, offset counter
+		mov ah, 13h
+		mov al, 1h
+		mov bl, 2h
+		mov bh, 0
+		mov cx, 12
+		int 10h
+
+		pop bp
+		pop es
+		pop dx
+		mov ah, 02h
+		mov bh, 0h
+		int 10h
+
+		pop ds
+		pop es
+		pop	si
+		pop dx
+		pop cx
+		pop bx
+		pop	ax
+
+		mov sp, save_sp
+		mov ax, save_ss
+		mov ss, ax
+		mov ax, save_ax
+
+		mov al, 20h
+		out 20h, al
+		iret
+	inter endp
+
+	inter_end:
+
+	is_loaded proc
+		push ax
+		push bx
+		push si
+
+		mov ax, 351ch
+		int 21h
+		mov si, offset id - offset inter
+		mov ax, es:[bx + si]
+		cmp	ax, id
+			jne is_loaded_ret
+		mov loaded, 1
+
+		is_loaded_ret:
+			pop si
+			pop bx
+			pop ax
+			ret
+	is_loaded endp
+	
+	is_tounld proc
+		push ax
+		push es
+
+		mov ax, save_psp
+		mov es, ax
+		cmp byte ptr es:[82h], '-'
+			jne is_tounld_ret
+		cmp byte ptr es:[83h], 'u'
+			jne is_tounld_ret
+		mov tounld, 1
+
+		is_tounld_ret:
+			pop es
+			pop ax
+			ret
+	is_tounld endp
+
+	load proc
+		push ax
+		push bx
+		push cx
+		push dx
+		push es
+		push ds
+
+		mov ah, 35h
+		mov al, 1ch
+		int 21h
+		mov save_cs, es
+		mov save_ip, bx
+		mov ax, seg inter
+		mov ds, ax
+		mov dx, offset inter
+		mov ah, 25h
+		mov al, 1ch
+		int 21h
+		pop ds
+
+		mov dx, offset inter_end
+		mov cl, 4h
+		shr dx, cl
+		add dx, 100h
+		xor ax, ax
+		mov ah, 31h
+		int 21h
+
+		pop es
+		pop dx
+		pop cx
+		pop bx
+		pop ax
+		ret
+	load endp
+
+	unload proc
+		cli
+		push ax
+		push bx
+		push dx
+		push ds
+		push es
+		push si
+
+		mov ah, 35h
+		mov al, 1ch
+		int 21h
+		mov si, offset save_cs
+		sub si, offset inter
+		mov ax, es:[bx + si]
+		mov dx, es:[bx + si + 2]
+
+		push ds
+		mov ds, ax
+		mov ax, 251ch
+		int 21h
+		pop ds
+
+		mov ax, es:[bx + si + 4]
+		mov es, ax
+		push es
+		mov ax, es:[2ch]
+		mov es, ax
+		mov ah, 49h
+		int 21h
+		pop es
+		mov ah, 49h
+		int 21h
+
+		sti
+
+		pop si
+		pop es
+		pop ds
+		pop dx
+		pop bx
+		pop ax
+
+		ret
+	unload endp
+
+	print_string proc near
+		push ax
+		mov ah, 09h
+		int 21h
+		pop ax
+		retn
+	print_string endp
+
+	main proc
+		push ds
+		xor ax, ax
+		push ax
+		mov ax, data
+		mov ds, ax
+		mov save_psp, es
+
+		call is_loaded
+		call is_tounld
+		cmp tounld, 1
+			je to_unload
+		cmp loaded, 1
+			jne to_load
+		mov dx, offset msg_loaded
+		call print_string
+		jmp main_ret
+
+		to_load:
+			mov dx, offset msg_loading
+			call print_string
+			call load
+			jmp main_ret
+
+		to_unload:
+			cmp loaded, 1
+				jne not_to_unload
+			mov dx, offset msg_unloading
+			call print_string
+			call unload
+			jmp main_ret
+
+		not_to_unload:
+			mov dx, offset msg_unloaded
+			call print_string
+
+		main_ret:
+			mov	ax, 4c00h
+			int	21h
+	main endp
+code ends
 end main
