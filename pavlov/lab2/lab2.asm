@@ -26,7 +26,12 @@
 		
 		mov dl, 13
 		int 21h								; возврат каретки, завершение
-		retf
+		
+		mov ah, 1
+		int 21h
+		
+		mov ah, 4Ch
+		int 21h
 	main endp
 	
 	print_string proc near					; процедура печати строки
