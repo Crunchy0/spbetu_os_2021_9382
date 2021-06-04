@@ -3,10 +3,10 @@ astack segment stack
 astack ends
 
 data segment
-	loading_msg db 'Прерывание загружено в память', 10, 13, '$'
-	loaded db 'Прерывание уже в памяти', 10, 13, '$'
-	unloading_msg db 'Прерывание выгружено из памяти', 10, 13, '$'
-	missing_msg db 'Прерывания нет в памяти', 10, 13, '$'
+	loading_msg db 'Обработчик загружен в память', 10, 13, '$'
+	loaded db 'Обработчик уже загружен', 10, 13, '$'
+	unloading_msg db 'Обработчик выгружен из памяти', 10, 13, '$'
+	missing_msg db 'Нет загруженного обработчика', 10, 13, '$'
 	lodd db 0
 	tounld db 0
 data ends
@@ -74,7 +74,7 @@ inter proc far
 		in al, 61h
 		mov ah, al
 		or al, 80h
-		out 61h, al			; установка быита разрешения
+		out 61h, al			; установка бита разрешения
 		xchg al, al
 		out 61h, al
 		mov al, 20h
