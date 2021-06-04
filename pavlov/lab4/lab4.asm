@@ -5,10 +5,10 @@ Astack ends
 data segment
 	loaded db 0
 	tounld db 0
-	msg_loading db "Прерывание загружено в память",10,13,"$"
-	msg_loaded db "Прерывание уже загружено",10,13,"$"
-	msg_unloading db "Прерывание выгружено из памяти",10,13,"$"
-	msg_unloaded db "Нет загруженного прерывания",10,13,"$"
+	msg_loading db "Обработчик загружен в память",10,13,"$"
+	msg_loaded db "Обработчик уже загружен",10,13,"$"
+	msg_unloading db "Обработчик выгружен из памяти",10,13,"$"
+	msg_unloaded db "Нет загруженного обработчика",10,13,"$"
 data ends
 
 code segment
@@ -16,7 +16,6 @@ code segment
 
 	inter proc far
 		jmp init
-		routdata:
 		counter db "0000 вызовов"
 		id dw 2228h
 		save_cs dw 0
@@ -35,17 +34,17 @@ code segment
 			mov ss, ax
 			mov ax, offset substack
 			add ax, 128
-			mov sp, ax	
+			mov sp, ax
 
-			push ax
-			push bx
-			push cx
-			push dx
-			push si
-			push es
-			push ds
-			mov ax, seg counter
-			mov ds, ax
+		push ax
+		push bx
+		push cx
+		push dx
+		push si
+		push es
+		push ds
+		mov ax, seg counter
+		mov ds, ax
 
 		mov ah, 03h
 		mov bh, 0h
