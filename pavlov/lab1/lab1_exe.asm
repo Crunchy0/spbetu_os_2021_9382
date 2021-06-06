@@ -88,7 +88,8 @@ code segment
 		mov ax, 0F000h
 		mov ds, ax
 		xor ax,ax			; проверка предпоследнего байта ROM BIOS
-		mov ax, [0FFFEh]
+		mov di, 0FFFEh
+		mov ax, ds:[di]
 		
 		mov bx, 0F8h
 		mov cx, 8
@@ -128,7 +129,6 @@ code segment
 		add dx, 12
 		call byte_to_dec
 
-		
 		mov al, ah
 		add dx, 3
 		call byte_to_dec
@@ -142,7 +142,6 @@ code segment
 		add dx, 20					; с информацией о системе в AL
 		call byte_to_hex			; и перевод в нужные СС с записью в строки
 		sub dx, 20
-		
 		int 21h
 		
 		mov al, bl
@@ -155,8 +154,8 @@ code segment
 		mov al, cl
 		add dx, 2
 		call byte_to_hex
-		sub dx, 33
 		
+		sub dx, 33
 		int 21h
 		
 		retn
@@ -175,7 +174,6 @@ code segment
 		int 21h
 		
 		call type_sys_info		; её вывод на экран
-		
 		retf
 	main endp
 code ends
