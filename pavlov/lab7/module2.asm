@@ -1,5 +1,4 @@
 code segment
-org 100h
 	assume cs:code, ds:nothing, ss:nothing
 	main proc far
 		push ax
